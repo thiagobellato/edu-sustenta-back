@@ -37,8 +37,8 @@ Nosso projeto é feito por:
 <div align="center">
 <h3>Membros</h3>
 <p>
-<a href="https://github.com/thiago_user"><img src="https://img.shields.io/badge/Thiago-000?style=for-the-badge&logo=github&logoColor=white" alt="Thiago"/></a>
-<a href="https://github.com/felipe_user"><img src="https://img.shields.io/badge/Felipe-000?style=for-the-badge&logo=github&logoColor=white" alt="Felipe"/></a>
+<a href="https://github.com/thiagobellato"><img src="https://img.shields.io/badge/Thiago-000?style=for-the-badge&logo=github&logoColor=white" alt="Thiago"/></a>
+<a href="https://github.com/felipe"><img src="https://img.shields.io/badge/Felipe-000?style=for-the-badge&logo=github&logoColor=white" alt="Felipe"/></a>
 <a href="https://github.com/juan_user"><img src="https://img.shields.io/badge/Juan-000?style=for-the-badge&logo=github&logoColor=white" alt="Juan"/></a>
 <a href="https://github.com/fatima_user"><img src="https://img.shields.io/badge/Fátima-000?style=for-the-badge&logo=github&logoColor=white" alt="Fátima"/></a>
 </p>
