@@ -1,6 +1,6 @@
 ## 🌍 Bolsa Futuro Digital
 
-**Sustentabilidade & Educação (ODS)**
+**Integrando a Sustentabilidade (ODS)**
 
 <p align="center">  
   <img src="https://img.shields.io/badge/Status-Inicializando-blue?style=for-the-badge" alt="Status: Inicializando"/>  
