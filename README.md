@@ -47,18 +47,11 @@ Nosso projeto é feito por:
 
 </div>
 
-(Nota: Substitua thiago_user, felipe_user, etc., pelos links reais do GitHub e adicione as Badges que desejar para cada membro.)
 
 🛣️ Status e Próximos Passos
-[FEAT] initial commit: Configuração da estrutura básica do projeto.
 
-[CHORE] Definição do modelo de Banco de Dados (Diagrama UML).
-
-[SETUP] Configuração do ambiente virtual Python e instalação de dependências.
-
-[TODO] Criação do primeiro app Django para conteúdo educacional.
 
 📚 Recursos
-Painel Trello do Projeto (Link a ser adicionado)
+
 
 Documentação ODS da ONU
