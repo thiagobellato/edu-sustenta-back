@@ -3,7 +3,7 @@
 **Integrando a Sustentabilidade (ODS)**
 
 <p align="center">  
-  <img src="https://img.shields.io/badge/Status-Inicializando-blue?style=for-the-badge" alt="Status: Inicializando"/>  
+ <img src="https://img.shields.io/badge/Status-Em%20Andamento-yellow?style=for-the-badge" alt="Status: Em Andamento"/>
 </p>
 
 ---
@@ -44,15 +44,21 @@ Podemos depois adicionar frontend (React, Vue etc.), infraestrutura (Docker, CI/
 
 ---
 
-### 🧑‍💻 Equipe de Colaboradores
+#### 🧑‍💻 Equipe de Colaboradores
 
 Nosso time é composto por:
 
 <div align="center">
 
-<a href="https://github.com/thiagobellato"><img src="https://img.shields.io/badge/Thiago-000?style=for-the-badge&logo=github&logoColor=white" alt="Thiago"/></a> <a href="https://github.com/felipemaya14"><img src="https://img.shields.io/badge/Felipe-000?style=for-the-badge&logo=github&logoColor=white" alt="Felipe"/></a> <a href="https://github.com/juan-m-cloud"><img src="https://img.shields.io/badge/Juan-000?style=for-the-badge&logo=github&logoColor=white" alt="Juan"/></a> <a href="https://github.com/fatimaguero"><img src="https://img.shields.io/badge/Fátima-000?style=for-the-badge&logo=github&logoColor=white" alt="Fátima"/></a>
+<a href="https://github.com/thiagobellato"><img src="https://img.shields.io/badge/Thiago-000?style=for-the-badge&logo=github&logoColor=white" alt="Thiago"/></a> 
+<a href="https://github.com/felipemaya14"><img src="https://img.shields.io/badge/Felipe-000?style=for-the-badge&logo=github&logoColor=white" alt="Felipe"/></a> 
+<a href="https://github.com/juan-m-cloud"><img src="https://img.shields.io/badge/Juan-000?style=for-the-badge&logo=github&logoColor=white" alt="Juan"/></a> 
+<a href="https://github.com/fatimaguero"><img src="https://img.shields.io/badge/Fátima-000?style=for-the-badge&logo=github&logoColor=white" alt="Fátima"/></a>
+<a href="https://github.com/MarcusAmoglia"><img src="https://img.shields.io/badge/Marcus-000?style=for-the-badge&logo=github&logoColor=white" alt="Marcus"/></a>
+<a href="https://github.com/Kalli-E"><img src="https://img.shields.io/badge/Kalli-000?style=for-the-badge&logo=github&logoColor=white" alt="Kalli"/></a>
 
 </div>
+
 
 Cada membro pode ter áreas de responsabilidade atribuídas conforme avance o projeto (conteúdo, backend, frontend, UX, testes etc.).
 
