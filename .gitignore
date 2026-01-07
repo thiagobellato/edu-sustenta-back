@@ -1,2 +1,5 @@
 /venv
-/__pycache__
+/Edusustenta/__pycache__
+/core/__pycache__
+/.python-version
+/db.sqlite3

@@ -37,8 +37,8 @@ INSTALLED_APPS = [
     "django.contrib.sessions",
     "django.contrib.messages",
     "django.contrib.staticfiles",
-    # Meu app
-    "apps.escola",
+    "rest_framework",
+    "core",
 ]
 
 
