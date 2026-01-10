@@ -4,16 +4,14 @@ from .views import (
     AlunoViewSet,
     ProfessorViewSet,
     UserViewSet,
-    EscolaViewSet,
-    TrilhaViewSet,
 )
 
 router = DefaultRouter()
 router.register(r"usuarios", UserViewSet)
 router.register(r"alunos", AlunoViewSet)
 router.register(r"professores", ProfessorViewSet)
-router.register(r"escolas", EscolaViewSet)
-router.register(r"trilhas", TrilhaViewSet)
+# router.register(r"escolas", EscolaViewSet)
+# router.register(r"trilhas", TrilhaViewSet)
 
 urlpatterns = [
     path("", include(router.urls)),

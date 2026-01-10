@@ -1,6 +1,5 @@
 from django.db import models
-from django.contrib.auth.models import AbstractUser
-from django.contrib.auth.models import BaseUserManager
+from django.contrib.auth.models import AbstractUser, BaseUserManager
 
 
 class UserManager(BaseUserManager):
@@ -9,21 +8,27 @@ class UserManager(BaseUserManager):
             raise ValueError("O usuário precisa ter um email")
 
         email = self.normalize_email(email)
+
+        role = extra_fields.get("role")
+
+        # REGRA DE NEGÓCIO
+        if role == "GESTOR":
+            extra_fields.setdefault("is_staff", True)
+            extra_fields.setdefault("is_superuser", True)
+        else:
+            extra_fields.setdefault("is_staff", False)
+            extra_fields.setdefault("is_superuser", False)
+
         user = self.model(email=email, **extra_fields)
         user.set_password(password)
         user.save(using=self._db)
         return user
 
     def create_superuser(self, email, password=None, **extra_fields):
+        extra_fields.setdefault("role", "GESTOR")
+        extra_fields.setdefault("ativo", True)
         extra_fields.setdefault("is_staff", True)
         extra_fields.setdefault("is_superuser", True)
-        extra_fields.setdefault("ativo", True)
-
-        if extra_fields.get("is_staff") is not True:
-            raise ValueError("Superuser precisa ter is_staff=True")
-
-        if extra_fields.get("is_superuser") is not True:
-            raise ValueError("Superuser precisa ter is_superuser=True")
 
         return self.create_user(email, password, **extra_fields)
 
@@ -35,7 +40,7 @@ class User(AbstractUser):
         ("GESTOR", "Gestor"),
     )
 
-    username = None  # remove username
+    username = None
     email = models.EmailField(unique=True)
     nome = models.CharField(max_length=150)
     role = models.CharField(max_length=20, choices=ROLE_CHOICES)
@@ -46,45 +51,37 @@ class User(AbstractUser):
 
     objects = UserManager()
 
+    def save(self, *args, **kwargs):
+        """
+        Garante consistência caso alguém tente burlar via Admin ou código.
+        """
+        if self.role == "GESTOR":
+            self.is_staff = True
+            self.is_superuser = True
+        else:
+            self.is_staff = False
+            self.is_superuser = False
+
+        super().save(*args, **kwargs)
+
     def __str__(self):
         return self.nome
 
 
 class Aluno(models.Model):
-    user = models.OneToOneField(User, on_delete=models.CASCADE)
+    nome = models.CharField(max_length=150)
+    email = models.EmailField(unique=True)
     matricula = models.CharField(max_length=20, unique=True)
-    ativo = models.BooleanField(default=True)
-
-    def __str__(self):
-        return f"Aluno: {self.user.nome}"
-
-
-class Professor(models.Model):
-    user = models.OneToOneField(User, on_delete=models.CASCADE)
-    matricula = models.CharField(max_length=20, unique=True)
-    ativo = models.BooleanField(default=True)
-
-    def __str__(self):
-        return f"Professor: {self.user.nome}"
-
-
-class Trilha(models.Model):
-    nome = models.CharField(max_length=100)
-    nivel = models.CharField(max_length=50)
-
-    professor = models.ForeignKey(
-        Professor, on_delete=models.CASCADE, related_name="trilhas_criadas"
-    )
-
-    alunos = models.ManyToManyField(Aluno, related_name="trilhas")
     ativo = models.BooleanField(default=True)
 
     def __str__(self):
         return self.nome
 
 
-class Escola(models.Model):
-    nome = models.CharField(max_length=100)
+class Professor(models.Model):
+    nome = models.CharField(max_length=150)
+    email = models.EmailField(unique=True)
+    matricula = models.CharField(max_length=20, unique=True)
     ativo = models.BooleanField(default=True)
 
     def __str__(self):

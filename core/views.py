@@ -4,13 +4,11 @@ from rest_framework import status
 from django.http import JsonResponse
 from django.contrib.auth import get_user_model
 
-from .models import Aluno, Professor, Trilha, Escola
+from .models import Aluno, Professor
 from .serializers import (
     AlunoSerializer,
     ProfessorSerializer,
     UserSerializer,
-    TrilhaSerializer,
-    EscolaSerializer,
 )
 
 User = get_user_model()
@@ -24,14 +22,20 @@ def home(request):
 # USERS
 # ==========================
 class UserViewSet(ModelViewSet):
-    queryset = User.objects.filter(is_active=True)
+    queryset = User.objects.filter(ativo=True)
     serializer_class = UserSerializer
 
     def destroy(self, request, *args, **kwargs):
         user = self.get_object()
-        user.is_active = False
-        user.save()
-        return Response(status=status.HTTP_204_NO_CONTENT)
+
+        # DELETE LÓGICO CORRETO
+        user.ativo = False
+        user.save(update_fields=["ativo"])
+
+        return Response(
+            {"detail": "Usuário desativado com sucesso."},
+            status=status.HTTP_200_OK
+        )
 
 
 # ==========================
@@ -44,8 +48,11 @@ class AlunoViewSet(ModelViewSet):
     def destroy(self, request, *args, **kwargs):
         aluno = self.get_object()
         aluno.ativo = False
-        aluno.save()
-        return Response(status=status.HTTP_204_NO_CONTENT)
+        aluno.save(update_fields=["ativo"])
+        return Response(
+            {"detail": "Aluno desativado com sucesso."},
+            status=status.HTTP_200_OK
+        )
 
 
 # ==========================
@@ -58,33 +65,16 @@ class ProfessorViewSet(ModelViewSet):
     def destroy(self, request, *args, **kwargs):
         professor = self.get_object()
         professor.ativo = False
-        professor.save()
-        return Response(status=status.HTTP_204_NO_CONTENT)
+        professor.save(update_fields=["ativo"])
+        return Response(
+            {"detail": "Professor desativado com sucesso."},
+            status=status.HTTP_200_OK
+        )
 
 
 # ==========================
-# TRILHAS
+# FUTUROS VIEWSETS (PAUSADOS)
 # ==========================
-class TrilhaViewSet(ModelViewSet):
-    queryset = Trilha.objects.filter(ativo=True)
-    serializer_class = TrilhaSerializer
 
-    def destroy(self, request, *args, **kwargs):
-        trilha = self.get_object()
-        trilha.ativo = False
-        trilha.save()
-        return Response(status=status.HTTP_204_NO_CONTENT)
-
-
-# ==========================
-# ESCOLAS
-# ==========================
-class EscolaViewSet(ModelViewSet):
-    queryset = Escola.objects.filter(ativo=True)
-    serializer_class = EscolaSerializer
-
-    def destroy(self, request, *args, **kwargs):
-        escola = self.get_object()
-        escola.ativo = False
-        escola.save()
-        return Response(status=status.HTTP_204_NO_CONTENT)
+# class TrilhaViewSet(ModelViewSet):
+#     queryset = Trilha.obje
