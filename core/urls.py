@@ -7,9 +7,9 @@ from .views import (
 )
 
 router = DefaultRouter()
-router.register(r"usuarios", UserViewSet)
-router.register(r"alunos", AlunoViewSet)
-router.register(r"professores", ProfessorViewSet)
+router.register(r"users", UserViewSet, basename="users")
+router.register(r"alunos", AlunoViewSet, basename="alunos")
+router.register(r"professores", ProfessorViewSet, basename="professores")
 # router.register(r"escolas", EscolaViewSet)
 # router.register(r"trilhas", TrilhaViewSet)
 
