@@ -3,3 +3,7 @@
 /core/__pycache__
 /.python-version
 /db.sqlite3
+core/migrations/__pycache__/__init__.cpython-312.pyc
+core/migrations/__pycache__/0001_initial.cpython-312.pyc
+Edusustenta/__pycache__/__init__.cpython-312.pyc
+Edusustenta/__pycache__/settings.cpython-312.pyc
