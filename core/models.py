@@ -2,16 +2,18 @@ from django.db import models
 from django.contrib.auth.models import AbstractUser, BaseUserManager
 
 
+# ==========================
+# USER MANAGER
+# ==========================
 class UserManager(BaseUserManager):
     def create_user(self, email, password=None, **extra_fields):
         if not email:
             raise ValueError("O usuário precisa ter um email")
 
         email = self.normalize_email(email)
-
         role = extra_fields.get("role")
 
-        # REGRA DE NEGÓCIO
+        # REGRA DE NEGÓCIO: apenas GESTOR é admin
         if role == "GESTOR":
             extra_fields.setdefault("is_staff", True)
             extra_fields.setdefault("is_superuser", True)
@@ -29,10 +31,12 @@ class UserManager(BaseUserManager):
         extra_fields.setdefault("ativo", True)
         extra_fields.setdefault("is_staff", True)
         extra_fields.setdefault("is_superuser", True)
-
         return self.create_user(email, password, **extra_fields)
 
 
+# ==========================
+# USER (BASE ÚNICA)
+# ==========================
 class User(AbstractUser):
     ROLE_CHOICES = (
         ("ALUNO", "Aluno"),
@@ -53,7 +57,8 @@ class User(AbstractUser):
 
     def save(self, *args, **kwargs):
         """
-        Garante consistência caso alguém tente burlar via Admin ou código.
+        Garante consistência de permissões,
+        mesmo se alguém tentar alterar via Admin.
         """
         if self.role == "GESTOR":
             self.is_staff = True
@@ -68,21 +73,33 @@ class User(AbstractUser):
         return self.nome
 
 
+# ==========================
+# ALUNO (PERFIL DO USUÁRIO)
+# ==========================
 class Aluno(models.Model):
-    nome = models.CharField(max_length=150)
-    email = models.EmailField(unique=True)
+    user = models.OneToOneField(
+        User,
+        on_delete=models.CASCADE,
+        related_name="aluno",
+        limit_choices_to={"role": "ALUNO"},
+    )
     matricula = models.CharField(max_length=20, unique=True)
-    ativo = models.BooleanField(default=True)
 
     def __str__(self):
-        return self.nome
+        return f"Aluno: {self.user.nome}"
 
 
+# ==========================
+# PROFESSOR (PERFIL DO USUÁRIO)
+# ==========================
 class Professor(models.Model):
-    nome = models.CharField(max_length=150)
-    email = models.EmailField(unique=True)
+    user = models.OneToOneField(
+        User,
+        on_delete=models.CASCADE,
+        related_name="professor",
+        limit_choices_to={"role": "PROFESSOR"},
+    )
     matricula = models.CharField(max_length=20, unique=True)
-    ativo = models.BooleanField(default=True)
 
     def __str__(self):
-        return self.nome
+        return f"Professor: {self.user.nome}"
