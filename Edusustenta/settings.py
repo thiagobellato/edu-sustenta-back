@@ -40,13 +40,15 @@ INSTALLED_APPS = [
     "rest_framework",
     "drf_yasg",
     "core",
+    'corsheaders',  # Correção para API
 ]
 
 
 MIDDLEWARE = [
+    'corsheaders.middleware.CorsMiddleware', # Deve vir antes do CommonMiddleware
+    'django.middleware.common.CommonMiddleware',
     "django.middleware.security.SecurityMiddleware",
     "django.contrib.sessions.middleware.SessionMiddleware",
-    "django.middleware.common.CommonMiddleware",
     "django.middleware.csrf.CsrfViewMiddleware",
     "django.contrib.auth.middleware.AuthenticationMiddleware",
     "django.contrib.messages.middleware.MessageMiddleware",
@@ -126,3 +128,7 @@ STATIC_URL = "static/"
 # https://docs.djangoproject.com/en/5.2/ref/settings/#default-auto-field
 
 DEFAULT_AUTO_FIELD = "django.db.models.BigAutoField"
+CORS_ALLOWED_ORIGINS = [
+    "http://localhost:5173", # Porta padrão do Vite/React
+    "http://127.0.0.1:5173",
+]

@@ -1,9 +1,9 @@
-const BASE_URL = 'http://localhost:8080';
+const BASE_URL = 'http://127.0.0.1:8000';
 
 export const registrarUsuario = async (novoUsuario) => {
     // eslint-disable-next-line no-useless-catch
     try {
-        const response = await fetch(`${BASE_URL}/usuarios/`, {
+        const response = await fetch(`${BASE_URL}/api/users/`, {
             method: 'POST',
             headers: {
                 'Content-Type': 'application/json'
@@ -19,7 +19,7 @@ export const registrarUsuario = async (novoUsuario) => {
 export const loginUsuario = async (credenciais) => {
     // eslint-disable-next-line no-useless-catch
     try {
-        const response = await fetch(`${BASE_URL}/usuarios/login`, {
+        const response = await fetch(`${BASE_URL}/users/login`, {
             method: 'POST',
             headers: {
                 'Content-Type': 'application/json'
