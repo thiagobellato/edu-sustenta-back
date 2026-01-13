@@ -1,5 +1,6 @@
 import { useState } from "react";
-import Footer from "../../Footer/Footer";
+import "./HelpSection.css";
+import {Button} from "../../UI/Button.jsx";
 
 export default function HelpSection() {
   const [open, setOpen] = useState(null);
@@ -21,15 +22,15 @@ export default function HelpSection() {
 
       {topics.map((item, index) => (
         <div key={index} className="dropdown">
-          <button onClick={() => setOpen(open === index ? null : index)}>
+          <Button onClick={() => setOpen(open === index ? null : index)}>
             {item.title}
-          </button>
+          </Button>
 
           {open === index && <p>{item.content}</p>}
         </div>
       ))}
 
-      <Footer />
+
     </div>
   );
 }

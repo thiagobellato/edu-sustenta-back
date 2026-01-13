@@ -1,25 +1,34 @@
-import Card from '../../UI/Card.jsx';
+import { Card } from '../../UI/Card.jsx';
+import './aboutSection.css';
+
+import forest2 from "../../../assets/Images/forest2.png";
+
 export default function AboutSection() {
   return (
+    <section
+          className="about"
+          style={{ backgroundImage: `url(${forest2})` }}
+      >   
     <div className="about">
       <h2>Sobre nós</h2>
 
       <div className="cards">
-        <div className="card">
-          <h3>Missão</h3>
-          <p>Promover educação ambiental acessível e de impacto.</p>
-        </div>
+        <Card
+          title="Missão"
+          description="Promover educação ambiental acessível e de impacto."
+        />
 
-        <div className="card">
-          <h3>Visão</h3>
-          <p>Ser referência em educação sustentável no Brasil.</p>
-        </div>
+        <Card
+          title="Visão"
+          description="Ser referência em educação sustentável no Brasil."
+        />
 
-        <div className="card">
-          <h3>Valores</h3>
-          <p>Responsabilidade, inovação, colaboração e ética.</p>
-        </div>
+        <Card
+          title="Valores"
+          description="Responsabilidade, inovação, colaboração e ética."
+        />
       </div>
     </div>
+  </section>
   );
 }

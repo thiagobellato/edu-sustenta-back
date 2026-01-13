@@ -4,7 +4,10 @@ export const Card = ({ title, description }) => {
   return (
     <div className="card"> 
         <h3>{title}</h3>
-        <p>{description}</p>
+        <div className="underline">
+          <p>{description}</p>
+        </div>
+        
     </div>
   );
 }

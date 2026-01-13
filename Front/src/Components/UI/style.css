@@ -2,9 +2,22 @@
   padding: 24px;
   border-radius: 12px;
   background: #fff;
+  width: 25%;
+  display: block;
+  margin: 25px;
+  justify-content: center;
+  align-items: center; 
+}
+
+.underline {
+  border-top: 2px solid #fff;
+  border-bottom: 2px solid #56ab2f;
+  padding-bottom: 10px;
+  margin-bottom: 15px;
 }
 
 .btn {
+  gap: 20px;
   padding: 12px 20px;
   border-radius: 8px;
   display: inline-block;
@@ -12,7 +25,7 @@
 }
 
 .btn-primary {
-  background: #22c55e;
+  background: #56ab2f;
 }
 .btn-secondary {
   background: #3b82f6;

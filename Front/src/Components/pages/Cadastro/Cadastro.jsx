@@ -1,8 +1,9 @@
 import { useState } from 'react';
 import { FaUser, FaLock, FaEnvelope } from 'react-icons/fa';
-import { Link } from 'react-router-dom';
+import { Link, useNavigate } from 'react-router-dom';
 import { registrarUsuario } from '../../../services/api';
 import './Cadastro.css';
+
 
 const Cadastro = () => {
     const [name, setName] = useState("");
@@ -57,6 +58,7 @@ const Cadastro = () => {
     };
 
     return (
+   
         <div className="content-wrap">
             <form onSubmit={handleSubmit}>
                 <h1>Crie sua Conta</h1>
@@ -132,6 +134,7 @@ const Cadastro = () => {
                 </div>
             </form>
         </div>
+       
     );
 };
 

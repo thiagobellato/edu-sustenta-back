@@ -1,20 +1,23 @@
-import { FaLeaf } from 'react-icons/fa';
-import './Navbar.css';
+import { FaLeaf } from "react-icons/fa";
+import "./Navbar.css";
 
-const Navbar = () => {
-    return (
-        <nav className="navbar">
-            <div className="navbar-brand">
-                <FaLeaf className="navbar-icon" />
-                <span>Edu-Sustenta</span>
-            </div>
-            <div className="navbar-links">
-                <a href="#">Início</a>
-                <a href="#">Sobre</a>
-                <button className="nav-btn">Ajuda</button>
-            </div>
-        </nav>
-    );
+const Navbar = ({ onNavigate }) => {
+  return (
+    <nav className="navbar">
+      <div className="navbar-brand">
+        <FaLeaf className="navbar-icon" />
+        <span>Edu-Sustenta</span>
+      </div>
+
+      <div className="navbar-links">
+        <button onClick={() => onNavigate("home")}>Início</button>
+        <button onClick={() => onNavigate("about")}>Sobre</button>
+        <button className="nav-btn" onClick={() => onNavigate("help")}>
+          Ajuda
+        </button>
+      </div>
+    </nav>
+  );
 };
 
 export default Navbar;
