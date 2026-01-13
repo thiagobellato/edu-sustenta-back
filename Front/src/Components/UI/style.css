@@ -1,0 +1,19 @@
+.card {
+  padding: 24px;
+  border-radius: 12px;
+  background: #fff;
+}
+
+.btn {
+  padding: 12px 20px;
+  border-radius: 8px;
+  display: inline-block;
+  width: 25%;
+}
+
+.btn-primary {
+  background: #22c55e;
+}
+.btn-secondary {
+  background: #3b82f6;
+}
