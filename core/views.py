@@ -6,16 +6,18 @@ from django.contrib.auth import get_user_model
 
 from .models import Aluno, Professor
 from .serializers import (
-    AlunoSerializer, 
-    ProfessorSerializer, 
-    UserSerializer
+    AlunoSerializer,
+    ProfessorSerializer,
+    UserSerializer,
 )
 
 User = get_user_model()
 
+
 # --- ESTA FUNÇÃO PRECISA EXISTIR PARA O URLS.PY FUNCIONAR ---
 def home(request):
     return JsonResponse({"status": "API Edusustenta está rodando"})
+
 
 # ==========================
 # USERS
@@ -24,29 +26,30 @@ class UserViewSet(ModelViewSet):
     """
     Endpoint principal para criação e gestão de usuários.
     """
-    queryset = User.objects.filter(ativo=True)
+    queryset = User.objects.filter(is_active=True)
     serializer_class = UserSerializer
 
     def destroy(self, request, *args, **kwargs):
         user = self.get_object()
-        user.ativo = False
         user.is_active = False
-        user.save(update_fields=["ativo", "is_active"])
+        user.save(update_fields=["is_active"])
         return Response(
-            {"detail": "Usuário desativado com sucesso."}, 
-            status=status.HTTP_200_OK
+            {"detail": "Usuário desativado com sucesso."},
+            status=status.HTTP_200_OK,
         )
+
 
 # ==========================
 # ALUNOS (Somente Leitura)
 # ==========================
 class AlunoViewSet(ReadOnlyModelViewSet):
-    queryset = Aluno.objects.filter(user__ativo=True)
+    queryset = Aluno.objects.filter(user__is_active=True)
     serializer_class = AlunoSerializer
+
 
 # ==========================
 # PROFESSORES (Somente Leitura)
 # ==========================
 class ProfessorViewSet(ReadOnlyModelViewSet):
-    queryset = Professor.objects.filter(user__ativo=True)
+    queryset = Professor.objects.filter(user__is_active=True)
     serializer_class = ProfessorSerializer

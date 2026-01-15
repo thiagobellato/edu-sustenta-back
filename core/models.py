@@ -5,7 +5,8 @@ from django.contrib.auth.models import AbstractUser, BaseUserManager
 class UserManager(BaseUserManager):
     def create_user(self, email, password=None, **extra_fields):
         if not email:
-            raise ValueError("O usuário precisa ter um email")
+            raise ValueError("O usuário precisa ter um e-mail")
+
         email = self.normalize_email(email)
         role = extra_fields.get("role")
 
@@ -15,6 +16,8 @@ class UserManager(BaseUserManager):
         else:
             extra_fields.setdefault("is_staff", False)
             extra_fields.setdefault("is_superuser", False)
+
+        extra_fields.setdefault("is_active", True)
 
         user = self.model(email=email, **extra_fields)
         user.set_password(password)
@@ -32,49 +35,42 @@ class User(AbstractUser):
         ("PROFESSOR", "Professor"),
         ("GESTOR", "Gestor"),
     )
+
     username = None
+
     email = models.EmailField(unique=True)
     nome = models.CharField(max_length=150)
-    cpf = models.CharField(max_length=11, unique=True, null=True, blank=True)
+    cpf = models.CharField(max_length=11, unique=True)
     data_nascimento = models.DateField(null=True, blank=True)
     role = models.CharField(max_length=20, choices=ROLE_CHOICES)
-    ativo = models.BooleanField(default=True)
+
+    is_active = models.BooleanField(default=True)
 
     USERNAME_FIELD = "email"
-    REQUIRED_FIELDS = ["nome", "role"]
-    objects = UserManager()
+    REQUIRED_FIELDS = ["nome", "cpf", "role"]
 
-    def save(self, *args, **kwargs):
-        if self.role == "GESTOR":
-            self.is_staff = True
-            self.is_superuser = True
-        else:
-            self.is_staff = False
-            self.is_superuser = False
-        super().save(*args, **kwargs)
+    objects = UserManager()
 
 
 class Aluno(models.Model):
-    user = models.OneToOneField(User, on_delete=models.CASCADE, related_name="aluno")
-    matricula = models.CharField(max_length=20, unique=True)
+    user = models.OneToOneField(
+        User,
+        on_delete=models.CASCADE,
+        related_name="aluno",
+    )
+
+    class Meta:
+        verbose_name = "Aluno"
+        verbose_name_plural = "Alunos"
 
 
 class Professor(models.Model):
     user = models.OneToOneField(
-        User, on_delete=models.CASCADE, related_name="professor"
+        User,
+        on_delete=models.CASCADE,
+        related_name="professor",
     )
 
-
-from django.db.models.signals import post_save
-from django.dispatch import receiver
-
-
-@receiver(post_save, sender=User)
-def criar_perfil_automatico(sender, instance, created, **kwargs):
-    if created:
-        if instance.role == "ALUNO":
-            Aluno.objects.get_or_create(
-                user=instance, defaults={"matricula": f"MAT-{instance.id}"}
-            )
-        elif instance.role == "PROFESSOR":
-            Professor.objects.get_or_create(user=instance)
+    class Meta:
+        verbose_name = "Professor"
+        verbose_name_plural = "Professores"
