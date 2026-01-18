@@ -1,8 +1,8 @@
-from rest_framework.viewsets import ModelViewSet
+from rest_framework.viewsets import ModelViewSet, ReadOnlyModelViewSet # <--- Importante
 from rest_framework import generics
 from rest_framework.response import Response
 from rest_framework import status
-from rest_framework.parsers import MultiPartParser, FormParser # Necessário para upload de arquivos
+from rest_framework.parsers import MultiPartParser, FormParser
 from django.http import JsonResponse
 from django.contrib.auth import get_user_model
 
@@ -11,7 +11,7 @@ from .serializers import (
     AlunoSerializer,
     ProfessorSerializer,
     UserSerializer,
-    ProfessorCadastroSerializer # Certifique-se de criar este no serializers.py
+    ProfessorCadastroSerializer
 )
 
 User = get_user_model()
@@ -20,7 +20,7 @@ def home(request):
     return JsonResponse({"status": "API Edusustenta está rodando"})
 
 # ==========================
-# USERS
+# USERS (Mantém tudo: GET, POST, PUT, DELETE)
 # ==========================
 class UserViewSet(ModelViewSet):
     queryset = User.objects.filter(ativo=True)
@@ -36,53 +36,30 @@ class UserViewSet(ModelViewSet):
         )
 
 # ==========================
-# ALUNOS
+# ALUNOS (Somente Leitura: GET)
 # ==========================
-class AlunoViewSet(ModelViewSet):
-    # CORREÇÃO: Filtra pelo ativo do User relacionado
+class AlunoViewSet(ReadOnlyModelViewSet): # <--- Mudou aqui
     queryset = Aluno.objects.filter(user__ativo=True)
     serializer_class = AlunoSerializer
-
-    def destroy(self, request, *args, **kwargs):
-        aluno = self.get_object()
-        # CORREÇÃO: Desativa o User vinculado, não o Aluno diretamente
-        aluno.user.ativo = False
-        aluno.user.save(update_fields=["ativo"])
-        
-        return Response(
-            {"detail": "Aluno desativado com sucesso."},
-            status=status.HTTP_200_OK
-        )
+    # Removemos o destroy() daqui, pois agora é ReadOnly. 
+    # Para deletar um aluno, deleta-se o User associado.
 
 # ==========================
-# PROFESSORES (Gestão)
+# PROFESSORES (Somente Leitura: GET)
 # ==========================
-class ProfessorViewSet(ModelViewSet):
-    # CORREÇÃO: Filtra pelo ativo do User relacionado
+class ProfessorViewSet(ReadOnlyModelViewSet): # <--- Mudou aqui
     queryset = Professor.objects.filter(user__ativo=True)
     serializer_class = ProfessorSerializer
-
-    def destroy(self, request, *args, **kwargs):
-        professor = self.get_object()
-        # CORREÇÃO: Desativa o User vinculado
-        professor.user.ativo = False
-        professor.user.save(update_fields=["ativo"])
-        
-        return Response(
-            {"detail": "Professor desativado com sucesso."},
-            status=status.HTTP_200_OK
-        )
+    # Removemos o destroy() daqui também.
 
 # ==========================
 # CADASTRO PÚBLICO (Sign Up)
 # ==========================
 class ProfessorCreateView(generics.CreateAPIView):
     """
-    View específica para o cadastro público de professores.
-    Aceita Multipart (Arquivos + JSON).
+    View específica para o cadastro (POST) público.
+    Não afeta a listagem restrita acima.
     """
     queryset = Professor.objects.all()
     serializer_class = ProfessorCadastroSerializer
-    # Permite upload de arquivos e dados de formulário
-    parser_classes = (MultiPartParser, FormParser) 
-    # permission_classes = [AllowAny] # Descomente se quiser liberar sem login
+    parser_classes = (MultiPartParser, FormParser)
