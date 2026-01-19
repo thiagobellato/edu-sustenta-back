@@ -1,62 +1,91 @@
 from django.contrib import admin
 from django.contrib.auth.admin import UserAdmin
-from .models import User, Aluno, Professor
+from .models import User, Aluno, Professor, School, TeacherSchoolLink
 
-# Configuração do Usuário
-# Usamos UserAdmin para garantir que a senha seja tratada corretamente
-@admin.register(User)
+# ==================================================
+# 1. Configuração do Usuário (CustomUser)
+# ==================================================
 class CustomUserAdmin(UserAdmin):
-    # Adicionamos os novos campos CPF e Nascimento na visualização
+    model = User
+    
+    # Adiciona os campos novos na tela de edição do admin
     fieldsets = UserAdmin.fieldsets + (
-        ('Dados Pessoais', {'fields': ('cpf', 'data_nascimento', 'role', 'ativo')}),
+        ('Informações Adicionais', {'fields': ('role', 'cpf', 'matricula', 'ativo')}),
     )
     
-    list_display = ("id", "nome", "email", "role", "ativo", "is_staff")
-    search_fields = ("nome", "email", "cpf")
-    list_filter = ("role", "ativo", "is_staff")
-    ordering = ("id",)
+    # Adiciona os campos novos na tela de criação
+    add_fieldsets = UserAdmin.add_fieldsets + (
+        ('Informações Adicionais', {'fields': ('role', 'cpf', 'matricula', 'ativo')}),
+    )
 
-
-@admin.register(Aluno)
-class AlunoAdmin(admin.ModelAdmin):
-    # 'get_nome' e 'get_email' são funções criadas lá embaixo para pegar dados do User
-    list_display = ("id", "get_nome", "get_email", "matricula", "get_ativo")
+    # Colunas da tabela de listagem
+    # CORREÇÃO: 'nome' não existe no User padrão, usa-se 'first_name'.
+    # CORREÇÃO: 'matricula' agora existe no User, então pode ficar aqui.
+    list_display = ('username', 'email', 'first_name', 'last_name', 'role', 'matricula', 'ativo')
     
-    # Para busca e filtro, usamos __ para navegar até o user
-    search_fields = ("user__nome", "user__email", "matricula")
-    list_filter = ("user__ativo",)
-    ordering = ("id",)
+    # Filtros laterais
+    list_filter = ('role', 'ativo', 'is_staff')
+    
+    # Campos de busca
+    search_fields = ('username', 'email', 'first_name', 'cpf', 'matricula')
 
-    # --- Funções auxiliares para mostrar dados do User ---
-    @admin.display(ordering='user__nome', description='Nome')
-    def get_nome(self, obj):
-        return obj.user.nome
+# ==================================================
+# 2. Configuração de Aluno e Professor (Perfis)
+# ==================================================
+class AlunoAdmin(admin.ModelAdmin):
+    list_display = ('get_username', 'get_email')
+    search_fields = ('user__username', 'user__email')
 
-    @admin.display(ordering='user__email', description='Email')
+    # Como Aluno agora é só um link para User, acessamos os dados via 'obj.user'
+    @admin.display(description='Usuário', ordering='user__username')
+    def get_username(self, obj):
+        return obj.user.username
+
+    @admin.display(description='Email', ordering='user__email')
     def get_email(self, obj):
         return obj.user.email
 
-    @admin.display(ordering='user__ativo', description='Ativo', boolean=True)
-    def get_ativo(self, obj):
-        return obj.user.ativo
-
-
-@admin.register(Professor)
 class ProfessorAdmin(admin.ModelAdmin):
-    list_display = ("id", "get_nome", "get_email", "matricula", "get_ativo")
-    search_fields = ("user__nome", "user__email", "matricula")
-    list_filter = ("user__ativo",)
-    ordering = ("id",)
+    list_display = ('get_username', 'get_email', 'get_matricula')
+    search_fields = ('user__username', 'user__email')
 
-    # --- Funções auxiliares para mostrar dados do User ---
-    @admin.display(ordering='user__nome', description='Nome')
-    def get_nome(self, obj):
-        return obj.user.nome
+    @admin.display(description='Nome', ordering='user__first_name')
+    def get_username(self, obj):
+        return obj.user.first_name
 
-    @admin.display(ordering='user__email', description='Email')
+    @admin.display(description='Email', ordering='user__email')
     def get_email(self, obj):
         return obj.user.email
 
-    @admin.display(ordering='user__ativo', description='Ativo', boolean=True)
-    def get_ativo(self, obj):
-        return obj.user.ativo
+    @admin.display(description='Matrícula', ordering='user__matricula')
+    def get_matricula(self, obj):
+        return obj.user.matricula
+
+# ==================================================
+# 3. Configuração de Escolas e Vínculos (Novo)
+# ==================================================
+class SchoolAdmin(admin.ModelAdmin):
+    list_display = ('name', 'invite_token', 'token_uses_remaining', 'token_last_reset', 'active')
+    search_fields = ('name', 'invite_token')
+    readonly_fields = ('invite_token',) # Token é gerado automático, melhor não editar na mão
+
+class TeacherSchoolLinkAdmin(admin.ModelAdmin):
+    list_display = ('get_professor', 'get_school', 'status', 'date_linked')
+    list_filter = ('status', 'school')
+    
+    @admin.display(description='Professor')
+    def get_professor(self, obj):
+        return obj.user.email
+
+    @admin.display(description='Escola')
+    def get_school(self, obj):
+        return obj.school.name
+
+# ==================================================
+# REGISTRO DOS MODELOS
+# ==================================================
+admin.site.register(User, CustomUserAdmin)
+admin.site.register(Aluno, AlunoAdmin)
+admin.site.register(Professor, ProfessorAdmin)
+admin.site.register(School, SchoolAdmin)
+admin.site.register(TeacherSchoolLink, TeacherSchoolLinkAdmin)

@@ -5,7 +5,7 @@ from .views import (
     ProfessorViewSet,
     UserViewSet,
     ProfessorCreateView,
-    ConsultaCPFView
+    JoinSchoolView # <--- Nova View
 )
 
 router = DefaultRouter()
@@ -14,16 +14,12 @@ router.register(r"alunos", AlunoViewSet)
 router.register(r"professores", ProfessorViewSet)
 
 urlpatterns = [
-    # === ROTAS MANUAIS (Prioridade Alta) ===
-    # Removemos o "api/" daqui porque ele já vem do arquivo principal
-    
-    # URL Final: /api/professores/cadastro/
+    # Rota para converter Aluno -> Professor via Token
+    path("schools/join/", JoinSchoolView.as_view(), name="join-school"),
+
+    # Cadastro inicial (se mantido)
     path("professores/cadastro/", ProfessorCreateView.as_view(), name="professor-cadastro"),
 
-    # URL Final: /api/consulta-cpf/<cpf>/
-    # (CORRIGIDO: Antes estava "api/consulta-cpf/...", gerando duplicidade)
-    path("consulta-cpf/<str:cpf>/", ConsultaCPFView.as_view(), name="consulta-cpf"),
-
-    # === ROTAS AUTOMÁTICAS (Router) ===
+    # Rotas do Router
     path("", include(router.urls)),
 ]

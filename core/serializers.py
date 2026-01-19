@@ -1,118 +1,83 @@
 from rest_framework import serializers
-from .models import User, Aluno, Professor
+from django.contrib.auth import get_user_model
+from .models import Aluno, Professor, School, TeacherSchoolLink
 
+User = get_user_model()
+
+# ==================================================
+# 1. USER SERIALIZER (Cadastro e Listagem Geral)
+# ==================================================
 class UserSerializer(serializers.ModelSerializer):
-    password = serializers.CharField(
-        write_only=True,
-        required=True,
-        min_length=6
-    )
-
     class Meta:
         model = User
+        # Listamos todos os campos novos que adicionamos no models.py
         fields = [
-            "id",
-            "nome",
-            "email",
-            "password",
-            "role",
-            "ativo",
-            "cpf",             # Novo
-            "data_nascimento", # Novo
+            'id', 'username', 'email', 'first_name', 'password', 
+            'role', 'cpf', 'matricula', 'data_nascimento', 'ativo'
         ]
+        # A senha deve ser apenas de escrita (não retorna na API por segurança)
+        extra_kwargs = {'password': {'write_only': True}}
 
     def create(self, validated_data):
-        password = validated_data.pop("password")
-        user = User.objects.create_user(
-            password=password,
-            **validated_data
-        )
+        """
+        Sobrescrevemos o create para garantir que a senha seja criptografada
+        e o perfil (Aluno/Professor) seja criado automaticamente.
+        """
+        password = validated_data.pop('password', None)
+        role = validated_data.get('role', 'ALUNO')
+        
+        # Cria o usuário
+        user = User(**validated_data)
+        if password:
+            user.set_password(password) # Criptografa a senha
+        user.save()
+
+        # Cria o perfil correspondente automaticamente
+        if role == 'ALUNO':
+            Aluno.objects.get_or_create(user=user)
+        elif role == 'PROFESSOR':
+            Professor.objects.get_or_create(user=user)
+            
         return user
 
-
+# ==================================================
+# 2. SERIALIZERS DE PERFIL (Leitura)
+# ==================================================
 class AlunoSerializer(serializers.ModelSerializer):
-    # Como tiramos esses campos do modelo Aluno, precisamos 
-    # buscá-los no User relacionado usando 'source'
-    nome = serializers.CharField(source='user.nome', read_only=True)
-    email = serializers.EmailField(source='user.email', read_only=True)
-    ativo = serializers.BooleanField(source='user.ativo', read_only=True)
+    # Trazemos dados do usuário para facilitar o front-end
+    nome = serializers.CharField(source='user.first_name', read_only=True)
+    email = serializers.CharField(source='user.email', read_only=True)
     cpf = serializers.CharField(source='user.cpf', read_only=True)
 
     class Meta:
         model = Aluno
-        fields = [
-            "id",
-            "nome",      # Vem do user
-            "email",     # Vem do user
-            "ativo",     # Vem do user
-            "cpf",       # Vem do user
-            "matricula", # Campo próprio do aluno
-        ]
-
+        fields = ['id', 'user', 'nome', 'email', 'cpf']
 
 class ProfessorSerializer(serializers.ModelSerializer):
-    # Mesmo processo do Aluno: busca dados no User
-    nome = serializers.CharField(source='user.nome', read_only=True)
-    email = serializers.EmailField(source='user.email', read_only=True)
-    ativo = serializers.BooleanField(source='user.ativo', read_only=True)
-    cpf = serializers.CharField(source='user.cpf', read_only=True)
+    nome = serializers.CharField(source='user.first_name', read_only=True)
+    email = serializers.CharField(source='user.email', read_only=True)
+    matricula = serializers.CharField(source='user.matricula', read_only=True)
 
     class Meta:
         model = Professor
-        fields = [
-            "id",
-            "nome",
-            "email",
-            "ativo",
-            "cpf",
-            "matricula",
-            "comprovante_vinculo", # Campo novo de arquivo
-        ]
+        fields = ['id', 'user', 'nome', 'email', 'matricula']
 
+# ==================================================
+# 3. LEGADO / ESPECÍFICOS
+# ==================================================
 
-# =======================================================
-# SERIALIZER ESPECÍFICO PARA CADASTRO (WRITE-ONLY)
-# =======================================================
+# Mantivemos este nome pois a View antiga ainda o importa.
+# Redirecionamos ele para comportar-se como um UserSerializer simplificado.
 class ProfessorCadastroSerializer(serializers.ModelSerializer):
-    """
-    Recebe tudo num formulário só (User + Professor + Arquivo)
-    e salva em duas tabelas diferentes.
-    """
-    # Campos do User (precisamos declarar explícito pois o model aqui é Professor)
-    nome = serializers.CharField(max_length=150)
-    email = serializers.EmailField()
-    password = serializers.CharField(write_only=True)
-    cpf = serializers.CharField(max_length=14)
-    data_nascimento = serializers.DateField()
-
     class Meta:
-        model = Professor
-        fields = [
-            'nome', 
-            'email', 
-            'password', 
-            'cpf', 
-            'data_nascimento', 
-            'matricula', 
-            'comprovante_vinculo'
-        ]
-
+        model = User
+        fields = ['username', 'email', 'password', 'first_name', 'matricula']
+        extra_kwargs = {'password': {'write_only': True}}
+    
     def create(self, validated_data):
-        # 1. Separa e retira os dados do Usuário do dicionário
-        user_data = {
-            'email': validated_data.pop('email'),
-            'nome': validated_data.pop('nome'),
-            'password': validated_data.pop('password'),
-            'cpf': validated_data.pop('cpf'),
-            'data_nascimento': validated_data.pop('data_nascimento'),
-            'role': 'PROFESSOR'
-        }
-
-        # 2. Cria o Usuário (isso já hash a senha)
-        user = User.objects.create_user(**user_data)
-
-        # 3. Cria o Professor vinculado ao usuário
-        # O que sobrou em validated_data é matricula e comprovante
-        professor = Professor.objects.create(user=user, **validated_data)
-        
-        return professor
+        validated_data['role'] = 'PROFESSOR'
+        user = User(**validated_data)
+        user.set_password(validated_data['password'])
+        user.save()
+        Professor.objects.create(user=user)
+        return user
