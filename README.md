@@ -51,11 +51,6 @@ Principais bibliotecas e pacotes utilizados no backend:
 * **Pillow** – Manipulação de imagens (upload de fotos, mídias, etc).
 * **django-cors-headers** – Controle de CORS para integração com frontend.
 * **drf-yasg** – Geração automática da documentação Swagger.
-* **python-decouple** – Gerenciamento de variáveis de ambiente.
-* **django-filter** – Filtros avançados nas rotas da API.
-* **Jaeger Client / OpenTelemetry** – Observabilidade e rastreamento de requisições.
-
-> Todas as dependências estão listadas no arquivo `requirements.txt`.
 
 ---
 
@@ -73,7 +68,7 @@ Essas páginas permitem:
 * Visualizar todas as rotas disponíveis.
 * Testar endpoints diretamente pelo navegador.
 * Ver schemas de request e response.
-
+* 
 ---
 
 #### 🧑‍💻 Equipe de Colaboradores
@@ -122,7 +117,6 @@ Apesar de o projeto estar concluído como MVP acadêmico, ele pode ser expandido
 
 * Migração do banco para PostgreSQL ou MySQL.
 * Sistema de notificações.
-* Dashboards administrativos.
 * Autenticação via OAuth (Google, GitHub, etc).
 * Deploy em nuvem (Render, Railway, AWS, etc).
 
