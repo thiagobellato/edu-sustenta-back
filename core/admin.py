@@ -4,6 +4,7 @@ from .models import User, Aluno, Professor, School, TeacherSchoolLink
 
 
 class CustomUserAdmin(UserAdmin):
+    ordering = ('email',)
     model = User
 
     fieldsets = UserAdmin.fieldsets + (
@@ -19,12 +20,13 @@ class CustomUserAdmin(UserAdmin):
     )
 
     list_display = (
-        'username', 'email', 'first_name',
+        'email', 'first_name',
         'last_name', 'role', 'matricula', 'ativo'
     )
 
     list_filter = ('role', 'ativo', 'is_staff')
-    search_fields = ('username', 'email', 'first_name', 'cpf', 'matricula')
+    search_fields = ('email', 'first_name', 'cpf', 'matricula')
+
 
 
 class AlunoAdmin(admin.ModelAdmin):

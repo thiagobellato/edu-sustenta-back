@@ -18,6 +18,12 @@ class User(AbstractUser):
         ('GESTOR', 'Gestor'),
     )
 
+    username = None
+    email = models.EmailField(unique=True)
+
+    USERNAME_FIELD = 'email'
+    REQUIRED_FIELDS = []
+
     role = models.CharField(max_length=20, choices=ROLE_CHOICES, default='ALUNO')
     ativo = models.BooleanField(default=True)
     cpf = models.CharField(max_length=14, blank=True, null=True)
@@ -77,7 +83,7 @@ class Notification(models.Model):
     created_at = models.DateTimeField(auto_now_add=True)
 
     def __str__(self):
-        return f"{self.user.username} - {self.title}"
+        return f"{self.user.email} - {self.title}"
 
 
 class Aluno(models.Model):
