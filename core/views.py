@@ -5,7 +5,7 @@ from django.db import transaction
 from django.http import JsonResponse
 from django.utils import timezone
 
-from rest_framework import generics, status
+from rest_framework import generics
 from rest_framework.decorators import action
 from rest_framework.permissions import AllowAny, IsAuthenticated
 from rest_framework.response import Response
@@ -30,6 +30,10 @@ from .serializers import (
 User = get_user_model()
 
 
+# =========================
+# Health check
+# =========================
+
 def home(request):
     return JsonResponse({
         "status": "API EduSustenta está rodando",
@@ -37,33 +41,43 @@ def home(request):
     })
 
 
+# =========================
+# Auth
+# =========================
+
 class CustomLoginView(TokenObtainPairView):
     serializer_class = CustomLoginSerializer
 
+
+# =========================
+# Join School (Aluno -> Professor)
+# =========================
 
 class JoinSchoolView(APIView):
     permission_classes = [IsAuthenticated]
     throttle_classes = [UserRateThrottle]
 
     def post(self, request):
-        if request.user.role != 'ALUNO':
+        user = request.user
+
+        if user.role != 'ALUNO':
             return Response(
                 {"error": "Apenas Alunos podem utilizar este token."},
                 status=400
             )
 
         token_input = request.data.get('token', '').upper().strip()
-        if len(token_input) < 6:
+        if len(token_input) != 8:
             return Response({"error": "Token inválido."}, status=400)
 
         try:
             with transaction.atomic():
-                try:
-                    school = School.objects.select_for_update().get(
-                        invite_token=token_input,
-                        active=True
-                    )
-                except School.DoesNotExist:
+                school = School.objects.select_for_update().filter(
+                    invite_token=token_input,
+                    active=True
+                ).first()
+
+                if not school:
                     return Response({"error": "Escola não encontrada."}, status=404)
 
                 if school.token_uses_remaining <= 0:
@@ -71,14 +85,12 @@ class JoinSchoolView(APIView):
                     if (now - school.token_last_reset) > timedelta(minutes=15):
                         school.token_uses_remaining = 5
                         school.token_last_reset = now
-                        school.save()
                     else:
                         return Response(
                             {"error": "Token esgotado. Tente em alguns minutos."},
                             status=429
                         )
 
-                user = request.user
                 if TeacherSchoolLink.objects.filter(
                     user=user,
                     school=school
@@ -93,6 +105,7 @@ class JoinSchoolView(APIView):
 
                 user.role = 'PROFESSOR'
                 user.save()
+
                 Professor.objects.get_or_create(user=user)
 
                 TeacherSchoolLink.objects.create(
@@ -113,16 +126,23 @@ class JoinSchoolView(APIView):
                     "role": user.role
                 })
 
-        except Exception:
-            return Response({"error": "Erro interno."}, status=500)
+        except Exception as e:
+            return Response(
+                {"error": "Erro interno.", "detail": str(e)},
+                status=500
+            )
 
+
+# =========================
+# Dashboard
+# =========================
 
 class DashboardStatsView(APIView):
     permission_classes = [IsAuthenticated]
 
     def get(self, request):
         user = request.user
-        role = user.role.upper()
+        role = user.role
 
         if role == 'GESTOR':
             minhas_escolas = School.objects.filter(manager=user)
@@ -142,7 +162,7 @@ class DashboardStatsView(APIView):
                 "recentActivity": [
                     {
                         "id": link.id,
-                        "text": f"Prof. {link.user.first_name} entrou em {link.school.name}",
+                        "text": f"Professor {link.user.email} entrou em {link.school.name}",
                         "time": link.date_linked.strftime("%d/%m %H:%M")
                     } for link in recent_links
                 ]
@@ -172,6 +192,10 @@ class DashboardStatsView(APIView):
         return Response(data)
 
 
+# =========================
+# ViewSets
+# =========================
+
 class TeacherSchoolViewSet(ReadOnlyModelViewSet):
     serializer_class = TeacherSchoolLinkSerializer
     permission_classes = [IsAuthenticated]
@@ -186,12 +210,11 @@ class SchoolViewSet(ModelViewSet):
 
     def get_queryset(self):
         user = self.request.user
-        role = user.role.lower()
 
-        if role == 'gestor':
+        if user.role == 'GESTOR':
             return School.objects.filter(manager=user)
 
-        if role == 'professor':
+        if user.role == 'PROFESSOR':
             return School.objects.filter(
                 teacherschoollink__user=user,
                 teacherschoollink__status='APPROVED'

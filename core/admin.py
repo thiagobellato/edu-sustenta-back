@@ -1,89 +1,102 @@
 from django.contrib import admin
-from django.contrib.auth.admin import UserAdmin
+from django.contrib.auth.admin import UserAdmin as BaseUserAdmin
 from .models import User, Aluno, Professor, School, TeacherSchoolLink
 
 
-class CustomUserAdmin(UserAdmin):
-    ordering = ('email',)
+# =========================
+# User
+# =========================
+
+@admin.register(User)
+class CustomUserAdmin(BaseUserAdmin):
     model = User
 
-    fieldsets = UserAdmin.fieldsets + (
-        ('Informações Adicionais', {
-            'fields': ('role', 'cpf', 'matricula', 'ativo')
+    ordering = ("email",)
+    search_fields = ("email", "cpf", "matricula")
+
+    list_display = ("email", "role", "matricula", "ativo", "is_staff")
+    list_filter = ("role", "ativo", "is_staff")
+
+    fieldsets = (
+        ("Credenciais", {"fields": ("email", "password")}),
+        ("Perfil", {"fields": ("role", "cpf", "matricula", "data_nascimento", "ativo")}),
+        ("Permissões", {"fields": ("is_staff", "is_active", "is_superuser", "groups", "user_permissions")}),
+    )
+
+    add_fieldsets = (
+        (None, {
+            "classes": ("wide",),
+            "fields": ("email", "password1", "password2", "role"),
         }),
     )
 
-    add_fieldsets = UserAdmin.add_fieldsets + (
-        ('Informações Adicionais', {
-            'fields': ('role', 'cpf', 'matricula', 'ativo')
-        }),
-    )
-
-    list_display = (
-        'email', 'first_name',
-        'last_name', 'role', 'matricula', 'ativo'
-    )
-
-    list_filter = ('role', 'ativo', 'is_staff')
-    search_fields = ('email', 'first_name', 'cpf', 'matricula')
+    filter_horizontal = ("groups", "user_permissions")
 
 
+# =========================
+# Aluno
+# =========================
 
+@admin.register(Aluno)
 class AlunoAdmin(admin.ModelAdmin):
-    list_display = ('get_username', 'get_email')
-    search_fields = ('user__username', 'user__email')
+    list_display = ("get_email", "get_cpf")
+    search_fields = ("user__email", "user__cpf")
 
-    @admin.display(description='Usuário', ordering='user__username')
-    def get_username(self, obj):
-        return obj.user.username
-
-    @admin.display(description='Email', ordering='user__email')
+    @admin.display(description="Email", ordering="user__email")
     def get_email(self, obj):
         return obj.user.email
 
+    @admin.display(description="CPF", ordering="user__cpf")
+    def get_cpf(self, obj):
+        return obj.user.cpf
 
+
+# =========================
+# Professor
+# =========================
+
+@admin.register(Professor)
 class ProfessorAdmin(admin.ModelAdmin):
-    list_display = ('get_name', 'get_email', 'get_matricula')
-    search_fields = ('user__username', 'user__email')
+    list_display = ("get_email", "get_matricula")
+    search_fields = ("user__email", "user__matricula")
 
-    @admin.display(description='Nome', ordering='user__first_name')
-    def get_name(self, obj):
-        return obj.user.first_name
-
-    @admin.display(description='Email', ordering='user__email')
+    @admin.display(description="Email", ordering="user__email")
     def get_email(self, obj):
         return obj.user.email
 
-    @admin.display(description='Matrícula', ordering='user__matricula')
+    @admin.display(description="Matrícula", ordering="user__matricula")
     def get_matricula(self, obj):
         return obj.user.matricula
 
 
+# =========================
+# School
+# =========================
+
+@admin.register(School)
 class SchoolAdmin(admin.ModelAdmin):
     list_display = (
-        'name', 'invite_token',
-        'token_uses_remaining',
-        'token_last_reset', 'active'
+        "name", "invite_token",
+        "token_uses_remaining",
+        "token_last_reset", "active"
     )
-    search_fields = ('name', 'invite_token')
-    readonly_fields = ('invite_token',)
+    search_fields = ("name", "invite_token")
+    readonly_fields = ("invite_token",)
 
 
+# =========================
+# TeacherSchoolLink
+# =========================
+
+@admin.register(TeacherSchoolLink)
 class TeacherSchoolLinkAdmin(admin.ModelAdmin):
-    list_display = ('get_professor', 'get_school', 'status', 'date_linked')
-    list_filter = ('status', 'school')
+    list_display = ("get_professor", "get_school", "status", "date_linked")
+    list_filter = ("status", "school")
 
-    @admin.display(description='Professor')
+    @admin.display(description="Professor")
     def get_professor(self, obj):
         return obj.user.email
 
-    @admin.display(description='Escola')
+    @admin.display(description="Escola")
     def get_school(self, obj):
         return obj.school.name
-
-
-admin.site.register(User, CustomUserAdmin)
-admin.site.register(Aluno, AlunoAdmin)
-admin.site.register(Professor, ProfessorAdmin)
-admin.site.register(School, SchoolAdmin)
-admin.site.register(TeacherSchoolLink, TeacherSchoolLinkAdmin)
