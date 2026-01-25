@@ -1,17 +1,15 @@
 from rest_framework import serializers
-from django.contrib.auth import get_user_model
+from django.contrib.auth import get_user_model, authenticate
 from rest_framework_simplejwt.serializers import TokenObtainPairSerializer
-from .models import Aluno, Professor, School, TeacherSchoolLink, Notification
+from .models import Aluno, Professor, School, TeacherSchoolLink, Notification, generate_school_token
 
 User = get_user_model()
 
-
-# =========================
-# Login
-# =========================
-
+# ==================================================
+# 1. SERIALIZER DE LOGIN (Email + Password)
+# ==================================================
 class CustomLoginSerializer(TokenObtainPairSerializer):
-    email = serializers.EmailField()
+    email = serializers.EmailField(required=True)
 
     def validate(self, attrs):
         email = attrs.get("email")
@@ -22,11 +20,11 @@ class CustomLoginSerializer(TokenObtainPairSerializer):
         except User.DoesNotExist:
             raise serializers.ValidationError("Usuário não encontrado")
 
-        if not user.check_password(password):
-            raise serializers.ValidationError("Senha incorreta")
+        # authenticate precisa do USERNAME_FIELD, que é 'email'
+        user = authenticate(self.context['request'], email=email, password=password)
 
-        if not user.is_active:
-            raise serializers.ValidationError("Usuário inativo")
+        if not user:
+            raise serializers.ValidationError("Credenciais inválidas")
 
         refresh = self.get_token(user)
 
@@ -34,143 +32,140 @@ class CustomLoginSerializer(TokenObtainPairSerializer):
             "refresh": str(refresh),
             "access": str(refresh.access_token),
             "id": user.id,
-            "name": user.name,
+            "email": user.email,  # garante compatibilidade com front
+            "name": user.first_name,
             "role": user.role.lower(),
-            "has_school": False,
+            "has_school": False
         }
 
-        if user.role == "PROFESSOR":
+        if user.role.lower() == "professor":
             data["has_school"] = TeacherSchoolLink.objects.filter(
-                user=user, status="APPROVED"
+                user=user,
+                status="APPROVED"
             ).exists()
 
         return data
 
 
-# =========================
-# User
-# =========================
-
+# ==================================================
+# 2. USER SERIALIZER (Perfil Completo)
+# ==================================================
 class UserSerializer(serializers.ModelSerializer):
+    name = serializers.CharField(source='first_name', required=False)
     has_school = serializers.SerializerMethodField()
     schools = serializers.SerializerMethodField()
 
     class Meta:
         model = User
         fields = [
-            "id",
-            "email",
-            "password",
-            "name",
-            "role",
-            "cpf",
-            "matricula",
-            "data_nascimento",
-            "ativo",
-            "has_school",
-            "schools",
+            'id', 'email', 'password',
+            'role', 'cpf', 'matricula', 'data_nascimento', 'ativo',
+            'name', 'has_school', 'schools'
         ]
         extra_kwargs = {
-            "password": {"write_only": True},
-            "role": {"read_only": True},
+            'password': {'write_only': True},
         }
 
+    def to_representation(self, instance):
+        ret = super().to_representation(instance)
+        if ret.get('role'):
+            ret['role'] = ret['role'].lower()
+        return ret
+
     def get_has_school(self, obj):
-        if obj.role == "PROFESSOR":
-            return TeacherSchoolLink.objects.filter(
-                user=obj, status="APPROVED"
-            ).exists()
+        role = str(obj.role).lower()
+        if role == 'professor':
+            return TeacherSchoolLink.objects.filter(user=obj, status='APPROVED').exists()
         return False
 
     def get_schools(self, obj):
-        if obj.role == "PROFESSOR":
-            links = TeacherSchoolLink.objects.filter(user=obj, status="APPROVED")
+        role = str(obj.role).lower()
+        if role == 'professor':
+            links = TeacherSchoolLink.objects.filter(user=obj, status='APPROVED')
             return [{"id": link.school.id, "name": link.school.name} for link in links]
         return []
 
     def create(self, validated_data):
-        password = validated_data.pop("password")
-        user = User.objects.create_user(**validated_data)
-        user.set_password(password)
+        password = validated_data.pop('password', None)
+        role = validated_data.get('role', 'ALUNO')
+
+        user = User(**validated_data)
+        if password:
+            user.set_password(password)
         user.save()
 
-        Aluno.objects.get_or_create(user=user)
+        if role == 'ALUNO':
+            Aluno.objects.get_or_create(user=user)
+        elif role == 'PROFESSOR':
+            Professor.objects.get_or_create(user=user)
+
         return user
 
 
-# =========================
-# TeacherSchoolLink
-# =========================
-
+# ==================================================
+# 3. OUTROS SERIALIZERS
+# ==================================================
 class TeacherSchoolLinkSerializer(serializers.ModelSerializer):
-    school_name = serializers.CharField(source="school.name", read_only=True)
+    school_name = serializers.CharField(source='school.name', read_only=True)
 
     class Meta:
         model = TeacherSchoolLink
-        fields = ["id", "school", "school_name", "status", "date_linked"]
+        fields = ['id', 'school', 'school_name', 'status', 'date_linked']
 
-
-# =========================
-# Aluno / Professor
-# =========================
 
 class AlunoSerializer(serializers.ModelSerializer):
-    nome = serializers.CharField(source="user.name", read_only=True)
-    email = serializers.CharField(source="user.email", read_only=True)
-    cpf = serializers.CharField(source="user.cpf", read_only=True)
+    nome = serializers.CharField(source='user.first_name', read_only=True)
+    email = serializers.CharField(source='user.email', read_only=True)
+    cpf = serializers.CharField(source='user.cpf', read_only=True)
 
     class Meta:
         model = Aluno
-        fields = ["id", "user", "nome", "email", "cpf"]
+        fields = ['id', 'user', 'nome', 'email', 'cpf']
 
 
 class ProfessorSerializer(serializers.ModelSerializer):
-    nome = serializers.CharField(source="user.name", read_only=True)
-    email = serializers.CharField(source="user.email", read_only=True)
-    matricula = serializers.CharField(source="user.matricula", read_only=True)
+    nome = serializers.CharField(source='user.first_name', read_only=True)
+    email = serializers.CharField(source='user.email', read_only=True)
+    matricula = serializers.CharField(source='user.matricula', read_only=True)
 
     class Meta:
         model = Professor
-        fields = ["id", "user", "nome", "email", "matricula"]
+        fields = ['id', 'user', 'nome', 'email', 'matricula']
 
 
-# =========================
-# School
-# =========================
-
+# ===========================
+# School Serializer Corrigido
+# ===========================
 class SchoolSerializer(serializers.ModelSerializer):
     class Meta:
         model = School
-        fields = ["id", "name", "invite_token", "token_uses_remaining", "active"]
-        read_only_fields = ["invite_token", "token_uses_remaining", "active"]
+        fields = ['id', 'name', 'invite_token', 'token_uses_remaining', 'active']
+        read_only_fields = ['invite_token', 'token_uses_remaining', 'active']
 
+    def create(self, validated_data):
+        if 'invite_token' not in validated_data or not validated_data.get('invite_token'):
+            validated_data['invite_token'] = generate_school_token()
+        return super().create(validated_data)
 
-# =========================
-# Notification
-# =========================
 
 class NotificationSerializer(serializers.ModelSerializer):
     class Meta:
         model = Notification
-        fields = ["id", "title", "message", "is_read", "created_at"]
+        fields = ['id', 'title', 'message', 'is_read', 'created_at']
 
-
-# =========================
-# Cadastro de Professor
-# =========================
 
 class ProfessorCadastroSerializer(serializers.ModelSerializer):
     class Meta:
         model = User
-        fields = ["email", "password", "name", "matricula"]
-        extra_kwargs = {"password": {"write_only": True}}
+        fields = ['email', 'password', 'first_name', 'matricula']
+        extra_kwargs = {'password': {'write_only': True}}
 
     def create(self, validated_data):
-        password = validated_data.pop("password")
+        validated_data['role'] = 'PROFESSOR'
+        password = validated_data.pop('password')
 
-        user = User.objects.create_user(**validated_data)
+        user = User(**validated_data)
         user.set_password(password)
-        user.role = "PROFESSOR"
         user.save()
 
         Professor.objects.create(user=user)
