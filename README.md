@@ -68,7 +68,6 @@ Essas páginas permitem:
 * Visualizar todas as rotas disponíveis.
 * Testar endpoints diretamente pelo navegador.
 * Ver schemas de request e response.
-* 
 ---
 
 #### 🧑‍💻 Equipe de Colaboradores
