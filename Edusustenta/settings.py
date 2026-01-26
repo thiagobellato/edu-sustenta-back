@@ -38,7 +38,6 @@ INSTALLED_APPS = [
     "rest_framework_simplejwt",  # (Opcional listar aqui, mas boa prática)
     "drf_yasg",
     "core",
-    'corsheaders',  # Correção para API
 ]
 
 
@@ -47,13 +46,6 @@ MIDDLEWARE = [
     'django.middleware.common.CommonMiddleware',
     "django.middleware.security.SecurityMiddleware",
     "django.contrib.sessions.middleware.SessionMiddleware",
-<<<<<<< HEAD
-=======
-    # --- IMPORTANTE: O CORS DEVE FICAR AQUI (Antes do CommonMiddleware) ---
-    "corsheaders.middleware.CorsMiddleware",
-    # ----------------------------------------------------------------------
-    "django.middleware.common.CommonMiddleware",
->>>>>>> 3ce9578482e701d186f31cd674cf8251690f7e17
     "django.middleware.csrf.CsrfViewMiddleware",
     "django.contrib.auth.middleware.AuthenticationMiddleware",
     "django.contrib.messages.middleware.MessageMiddleware",
@@ -123,12 +115,12 @@ STATIC_URL = "static/"
 
 # Default primary key field type
 DEFAULT_AUTO_FIELD = "django.db.models.BigAutoField"
-<<<<<<< HEAD
+
 CORS_ALLOWED_ORIGINS = [
     "http://localhost:5173", # Porta padrão do Vite/React
     "http://127.0.0.1:5173",
 ]
-=======
+
 
 # Configurações de Mídia (Uploads)
 MEDIA_URL = "/media/"
@@ -171,4 +163,4 @@ SWAGGER_SETTINGS = {
         }
     }
 }
->>>>>>> 3ce9578482e701d186f31cd674cf8251690f7e17
+
