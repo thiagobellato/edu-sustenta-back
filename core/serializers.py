@@ -1,7 +1,7 @@
 from rest_framework import serializers
 from django.contrib.auth import get_user_model, authenticate
 from rest_framework_simplejwt.serializers import TokenObtainPairSerializer
-from .models import Aluno, Professor, School, TeacherSchoolLink, Notification, generate_school_token
+from .models import Aluno, Professor, School, TeacherSchoolLink, Notification, Trail, Module, generate_school_token
 
 User = get_user_model()
 
@@ -87,13 +87,14 @@ class UserSerializer(serializers.ModelSerializer):
 
     def create(self, validated_data):
         password = validated_data.pop('password', None)
-        role = validated_data.get('role', 'ALUNO')
+        role = validated_data.get('role', 'USER')
 
         user = User(**validated_data)
         if password:
             user.set_password(password)
         user.save()
 
+        # Cria perfil apenas se não for USER genérico
         if role == 'ALUNO':
             Aluno.objects.get_or_create(user=user)
         elif role == 'PROFESSOR':
@@ -170,3 +171,54 @@ class ProfessorCadastroSerializer(serializers.ModelSerializer):
 
         Professor.objects.create(user=user)
         return user
+
+
+# ===========================
+# Trail & Module Serializers
+# ===========================
+class ModuleSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = Module
+        fields = ['id', 'title', 'description', 'order']
+        read_only_fields = ['id']
+
+
+class TrailSerializer(serializers.ModelSerializer):
+    modules = ModuleSerializer(many=True, required=False)
+    created_by_name = serializers.CharField(source='created_by.first_name', read_only=True)
+    
+    class Meta:
+        model = Trail
+        fields = [
+            'id', 'title', 'description', 'status', 'created_by', 
+            'created_by_name', 'created_at', 'updated_at',
+            'category', 'difficulty', 'cover_image', 'modules'
+        ]
+        read_only_fields = ['id', 'created_by', 'created_at', 'updated_at']
+    
+    def create(self, validated_data):
+        modules_data = validated_data.pop('modules', [])
+        trail = Trail.objects.create(**validated_data)
+        
+        for index, module_data in enumerate(modules_data):
+            Module.objects.create(trail=trail, order=index, **module_data)
+        
+        return trail
+    
+    def update(self, instance, validated_data):
+        modules_data = validated_data.pop('modules', None)
+        
+        # Atualiza campos da trilha
+        for attr, value in validated_data.items():
+            setattr(instance, attr, value)
+        instance.save()
+        
+        # Atualiza módulos se fornecidos
+        if modules_data is not None:
+            # Remove módulos existentes
+            instance.modules.all().delete()
+            # Cria novos módulos
+            for index, module_data in enumerate(modules_data):
+                Module.objects.create(trail=instance, order=index, **module_data)
+        
+        return instance

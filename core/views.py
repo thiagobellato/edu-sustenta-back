@@ -12,7 +12,7 @@ from rest_framework.throttling import UserRateThrottle
 from rest_framework.decorators import action
 from rest_framework_simplejwt.views import TokenObtainPairView
 
-from .models import Aluno, Professor, School, TeacherSchoolLink, Notification
+from .models import Aluno, Professor, School, TeacherSchoolLink, Notification, Trail
 from .serializers import (
     AlunoSerializer,
     ProfessorSerializer,
@@ -21,7 +21,8 @@ from .serializers import (
     NotificationSerializer,
     SchoolSerializer,
     CustomLoginSerializer,
-    TeacherSchoolLinkSerializer
+    TeacherSchoolLinkSerializer,
+    TrailSerializer
 )
 
 User = get_user_model()
@@ -42,8 +43,9 @@ class JoinSchoolView(APIView):
     throttle_classes = [UserRateThrottle] 
 
     def post(self, request):
-        if request.user.role != 'ALUNO':
-            return Response({"error": "Apenas Alunos podem utilizar este token."}, status=400)
+        # Permite USER ou ALUNO se tornarem professor
+        if request.user.role not in ['USER', 'ALUNO']:
+            return Response({"error": "Apenas Usuários ou Alunos podem utilizar este token."}, status=400)
 
         token_input = request.data.get('token', '').upper().strip()
         if len(token_input) < 6:
@@ -94,6 +96,35 @@ class JoinSchoolView(APIView):
             return Response({"error": "Erro interno."}, status=500)
 
 
+class BecomeAlunoView(APIView):
+    permission_classes = [IsAuthenticated]
+    
+    def post(self, request):
+        user = request.user
+        
+        if user.role != 'USER':
+            return Response({"error": "Apenas usuários genéricos podem se tornar alunos."}, status=400)
+        
+        try:
+            with transaction.atomic():
+                user.role = 'ALUNO'
+                user.save()
+                Aluno.objects.get_or_create(user=user)
+                
+                Notification.objects.create(
+                    user=user,
+                    title="Bem-vindo como Aluno!",
+                    message="Sua conta foi atualizada. Agora você tem acesso às funcionalidades de aluno."
+                )
+                
+                return Response({
+                    "message": "Você agora é um aluno!",
+                    "role": user.role.lower()
+                }, status=200)
+        except Exception as e:
+            return Response({"error": "Erro ao atualizar conta."}, status=500)
+
+
 class DashboardStatsView(APIView):
     permission_classes = [IsAuthenticated]
 
@@ -106,6 +137,13 @@ class DashboardStatsView(APIView):
             total_professores = TeacherSchoolLink.objects.filter(
                 school__in=minhas_escolas, status='APPROVED'
             ).count()
+            
+            # Contar trilhas criadas por professores das escolas do gestor
+            professores_escolas = User.objects.filter(
+                school_links__school__in=minhas_escolas,
+                school_links__status='APPROVED'
+            ).distinct()
+            total_trilhas = Trail.objects.filter(created_by__in=professores_escolas).count()
 
             recent_links = TeacherSchoolLink.objects.filter(
                 school__in=minhas_escolas
@@ -115,6 +153,7 @@ class DashboardStatsView(APIView):
                 "total_escolas": minhas_escolas.count(),
                 "total_professores": total_professores,
                 "alunos_impactados": 0,
+                "minhas_trilhas": total_trilhas,  # Trilhas criadas por professores das escolas do gestor
                 "recentActivity": [
                     {
                         "id": link.id,
@@ -126,11 +165,28 @@ class DashboardStatsView(APIView):
 
         elif role == 'PROFESSOR':
             vinculos = TeacherSchoolLink.objects.filter(user=user, status='APPROVED')
+            minhas_trilhas = Trail.objects.filter(created_by=user)
+            trilhas_publicadas = minhas_trilhas.filter(status='published')
+            trilhas_rascunho = minhas_trilhas.filter(status='draft')
+            
+            # Últimas trilhas criadas
+            trilhas_recentes = minhas_trilhas.order_by('-created_at')[:5]
+            
             data = {
                 "escolas_vinculadas": vinculos.count(), 
                 "total_atividades": 0,
                 "total_alunos": 0,
-                "recentActivity": [{"id": 1, "text": "Vínculo com escola ativo!", "time": "Agora"}]
+                "minhas_trilhas": minhas_trilhas.count(),
+                "trilhas_publicadas": trilhas_publicadas.count(),
+                "trilhas_rascunho": trilhas_rascunho.count(),
+                "trilhas_em_andamento": trilhas_publicadas.count(),  # Para compatibilidade com frontend
+                "recentActivity": [
+                    {
+                        "id": trail.id,
+                        "text": f"Trilha '{trail.title}' criada",
+                        "time": trail.created_at.strftime("%d/%m %H:%M")
+                    } for trail in trilhas_recentes
+                ] if trilhas_recentes.exists() else [{"id": 1, "text": "Vínculo com escola ativo!", "time": "Agora"}]
             }
 
         else:
@@ -221,3 +277,43 @@ class ProfessorCreateView(generics.CreateAPIView):
     queryset = Professor.objects.all()
     serializer_class = ProfessorCadastroSerializer
     permission_classes = [AllowAny]
+
+
+class TrailViewSet(ModelViewSet):
+    serializer_class = TrailSerializer
+    permission_classes = [IsAuthenticated]
+    
+    def get_queryset(self):
+        queryset = Trail.objects.all()
+        status = self.request.query_params.get('status', None)
+        user = self.request.user
+        user_role = user.role.lower()
+        
+        # Professores veem apenas suas próprias trilhas (draft, published, archived)
+        if user_role == 'professor':
+            queryset = queryset.filter(created_by=user)
+        # Alunos veem apenas trilhas publicadas e ativas (não desativadas/archived)
+        elif user_role == 'aluno':
+            queryset = queryset.filter(status='published')
+        # Gestores podem ver todas as trilhas (ou ajustar conforme necessário)
+        
+        # Filtro adicional por status se fornecido
+        if status:
+            queryset = queryset.filter(status=status)
+        
+        return queryset.order_by('-created_at')
+    
+    def perform_create(self, serializer):
+        serializer.save(created_by=self.request.user)
+    
+    def destroy(self, request, *args, **kwargs):
+        instance = self.get_object()
+        # Só permite deletar trilhas em rascunho
+        if instance.status != 'draft':
+            return Response(
+                {'detail': 'Apenas trilhas em rascunho podem ser excluídas. Desative a trilha em vez de excluir.'},
+                status=status.HTTP_400_BAD_REQUEST
+            )
+        if instance.created_by != request.user:
+            return Response({'detail': 'Sem permissão.'}, status=status.HTTP_403_FORBIDDEN)
+        return super().destroy(request, *args, **kwargs)

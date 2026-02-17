@@ -47,6 +47,7 @@ class UserManager(BaseUserManager):
 # ==================================================
 class User(AbstractUser):
     ROLE_CHOICES = (
+        ('USER', 'Usuário'),
         ('ALUNO', 'Aluno'),
         ('PROFESSOR', 'Professor'),
         ('GESTOR', 'Gestor'),
@@ -63,7 +64,7 @@ class User(AbstractUser):
 
     objects = UserManager()  # <-- Importante!
 
-    role = models.CharField(max_length=20, choices=ROLE_CHOICES, default='ALUNO')
+    role = models.CharField(max_length=20, choices=ROLE_CHOICES, default='USER')
     ativo = models.BooleanField(default=True)
     cpf = models.CharField(max_length=14, blank=True, null=True)
     data_nascimento = models.DateField(null=True, blank=True)
@@ -127,3 +128,46 @@ class Aluno(models.Model):
 
 class Professor(models.Model):
     user = models.OneToOneField(User, on_delete=models.CASCADE, related_name='professor_profile')
+
+# ==================================================
+# Trail & Module
+# ==================================================
+class Trail(models.Model):
+    STATUS_CHOICES = (
+        ('draft', 'Rascunho'),
+        ('published', 'Publicado'),
+        ('archived', 'Desativada'),
+    )
+    
+    title = models.CharField(max_length=255)
+    description = models.TextField()
+    status = models.CharField(max_length=20, choices=STATUS_CHOICES, default='draft')
+    created_by = models.ForeignKey(User, on_delete=models.CASCADE, related_name='created_trails')
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+    
+    # Campos opcionais para compatibilidade com frontend
+    category = models.CharField(max_length=100, blank=True, null=True)
+    difficulty = models.CharField(max_length=50, blank=True, null=True)
+    cover_image = models.URLField(blank=True, null=True)
+    
+    class Meta:
+        ordering = ['-created_at']
+    
+    def __str__(self):
+        return self.title
+
+
+class Module(models.Model):
+    trail = models.ForeignKey(Trail, on_delete=models.CASCADE, related_name='modules')
+    title = models.CharField(max_length=255)
+    description = models.TextField()
+    order = models.IntegerField(default=0)
+    created_at = models.DateTimeField(auto_now_add=True)
+    
+    class Meta:
+        ordering = ['order', 'created_at']
+        unique_together = ('trail', 'order')
+    
+    def __str__(self):
+        return f"{self.trail.title} - {self.title}"
